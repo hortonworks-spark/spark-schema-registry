@@ -1,0 +1,36 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Java template
+*.class
+
+# logs
+logs
+*.log
+
+# Eclipse
+.settings/
+.project
+.classpath
+
+# Intellij
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Package Files
+*.jar
+*.war
+*.ear
+
+# mac dir files
+.DS_Store
