@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package com.hortonworks.spark.registry.sparkavro
+package com.hortonworks.spark.registry.avro
 
 import java.nio.ByteBuffer
+
+import scala.collection.JavaConverters._
 
 import org.apache.avro.{LogicalTypes, Schema}
 import org.apache.avro.Conversions.DecimalConversion
 import org.apache.avro.LogicalTypes.{TimestampMicros, TimestampMillis}
+import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.GenericData.{EnumSymbol, Fixed, Record}
+import org.apache.avro.generic.GenericData.Record
 import org.apache.avro.util.Utf8
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecializedGetters, SpecificInternalRow}
 import org.apache.spark.sql.types._
 
-import scala.collection.JavaConverters._
 
 /**
  * A serializer to serialize data in catalyst format to data in avro format.
+ * NOTE:
+ * This is taken from Apache spark master since spark versions 2.3
+ * and below does not have built in Avro support.
+ * https://github.com/apache/spark/tree/master/external/avro/src/main/scala/org/apache/spark/sql/avro
  */
 class AvroSerializer(rootCatalystType: DataType, rootAvroType: Schema, nullable: Boolean) {
 
@@ -134,14 +142,14 @@ class AvroSerializer(rootCatalystType: DataType, rootAvroType: Schema, nullable:
         (getter, ordinal) => getter.getInt(ordinal)
 
       case (TimestampType, LONG) => avroType.getLogicalType match {
-        case _: TimestampMillis => (getter, ordinal) => getter.getLong(ordinal) / 1000
-        case _: TimestampMicros => (getter, ordinal) => getter.getLong(ordinal)
-        // For backward compatibility, if the Avro type is Long and it is not logical type,
-        // output the timestamp value as with millisecond precision.
-        case null => (getter, ordinal) => getter.getLong(ordinal) / 1000
-        case other => throw new IncompatibleSchemaException(
-          s"Cannot convert Catalyst Timestamp type to Avro logical type ${other}")
-      }
+          case _: TimestampMillis => (getter, ordinal) => getter.getLong(ordinal) / 1000
+          case _: TimestampMicros => (getter, ordinal) => getter.getLong(ordinal)
+          // For backward compatibility, if the Avro type is Long and it is not logical type,
+          // output the timestamp value as with millisecond precision.
+          case null => (getter, ordinal) => getter.getLong(ordinal) / 1000
+          case other => throw new IncompatibleSchemaException(
+            s"Cannot convert Catalyst Timestamp type to Avro logical type ${other}")
+        }
 
       case (ArrayType(et, containsNull), ARRAY) =>
         val elementConverter = newConverter(
@@ -197,14 +205,12 @@ class AvroSerializer(rootCatalystType: DataType, rootAvroType: Schema, nullable:
   }
 
   private def newStructConverter(
-                                  catalystStruct: StructType, avroStruct: Schema): InternalRow => Record = {
-    if (avroStruct.getType != RECORD) {
+      catalystStruct: StructType, avroStruct: Schema): InternalRow => Record = {
+    if (avroStruct.getType != RECORD || avroStruct.getFields.size() != catalystStruct.length) {
       throw new IncompatibleSchemaException(s"Cannot convert Catalyst type $catalystStruct to " +
         s"Avro type $avroStruct.")
     }
-    val avroFields = avroStruct.getFields
-    assert(avroFields.size() == catalystStruct.length)
-    val fieldConverters = catalystStruct.zip(avroFields.asScala).map {
+    val fieldConverters = catalystStruct.zip(avroStruct.getFields.asScala).map {
       case (f1, f2) => newConverter(f1.dataType, resolveNullableType(f2.schema(), f1.nullable))
     }
     val numFields = catalystStruct.length

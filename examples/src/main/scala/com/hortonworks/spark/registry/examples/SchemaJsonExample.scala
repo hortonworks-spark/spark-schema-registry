@@ -18,7 +18,7 @@ import org.apache.spark.sql.types._
  *
  * To run the example:
  * 1. Run the Spark application
- *    SchemaExample <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location>
+ *    SchemaJsonExample <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location>
  * 2. Ingest the sample data (json) into input topic
  *    $ cat examples/schema-registry/avro/data/truck_events_json | kafka-console-producer.sh
  *    --broker-list host:port --topic topic1
@@ -26,7 +26,7 @@ import org.apache.spark.sql.types._
  *    $ kafka-console-consumer.sh --bootstrap-server host:port --new-consumer --topic topic1-out
  *
  */
-object SchemaExample {
+object SchemaJsonExample {
 
   def main(args: Array[String]): Unit = {
 

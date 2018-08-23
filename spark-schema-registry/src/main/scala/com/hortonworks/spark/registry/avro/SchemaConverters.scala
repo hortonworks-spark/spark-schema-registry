@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.hortonworks.spark.registry.sparkavro
+package com.hortonworks.spark.registry.avro
 
 import org.apache.avro.{LogicalTypes, Schema, SchemaBuilder}
 import org.apache.avro.LogicalTypes.{Date, Decimal, TimestampMicros, TimestampMillis}
@@ -29,6 +29,10 @@ import scala.util.Random
 /**
  * This object contains method that are used to convert sparkSQL schemas to avro schemas and vice
  * versa.
+ * NOTE:
+ * This is taken from Apache spark master since spark versions 2.3
+ * and below does not have built in Avro support.
+ * https://github.com/apache/spark/tree/master/external/avro/src/main/scala/org/apache/spark/sql/avro
  */
 object SchemaConverters {
   object AvroOutputTimestampType extends Enumeration {
@@ -142,12 +146,11 @@ object SchemaConverters {
   }
 
   def toAvroType(
-                  catalystType: DataType,
-                  nullable: Boolean = false,
-                  recordName: String = "topLevelRecord",
-                  prevNameSpace: String = "",
-                  outputTimestampType: AvroOutputTimestampType.Value = AvroOutputTimestampType.TIMESTAMP_MICROS)
-  : Schema = {
+      catalystType: DataType,
+      nullable: Boolean = false,
+      recordName: String = "topLevelRecord",
+      prevNameSpace: String = "")
+    : Schema = {
     val builder = SchemaBuilder.builder()
 
     val schema = catalystType match {
@@ -157,13 +160,7 @@ object SchemaConverters {
       case DateType =>
         LogicalTypes.date().addToSchema(builder.intType())
       case TimestampType =>
-        val timestampType = outputTimestampType match {
-          case AvroOutputTimestampType.TIMESTAMP_MILLIS => LogicalTypes.timestampMillis()
-          case AvroOutputTimestampType.TIMESTAMP_MICROS => LogicalTypes.timestampMicros()
-          case other =>
-            throw new IncompatibleSchemaException(s"Unexpected output timestamp type $other.")
-        }
-        timestampType.addToSchema(builder.longType())
+        LogicalTypes.timestampMicros().addToSchema(builder.longType())
 
       case FloatType => builder.floatType()
       case DoubleType => builder.doubleType()
@@ -181,10 +178,10 @@ object SchemaConverters {
       case BinaryType => builder.bytesType()
       case ArrayType(et, containsNull) =>
         builder.array()
-          .items(toAvroType(et, containsNull, recordName, prevNameSpace, outputTimestampType))
+          .items(toAvroType(et, containsNull, recordName, prevNameSpace))
       case MapType(StringType, vt, valueContainsNull) =>
         builder.map()
-          .values(toAvroType(vt, valueContainsNull, recordName, prevNameSpace, outputTimestampType))
+          .values(toAvroType(vt, valueContainsNull, recordName, prevNameSpace))
       case st: StructType =>
         val nameSpace = prevNameSpace match {
           case "" => recordName
@@ -194,7 +191,7 @@ object SchemaConverters {
         val fieldsAssembler = builder.record(recordName).namespace(nameSpace).fields()
         st.foreach { f =>
           val fieldAvroType =
-            toAvroType(f.dataType, f.nullable, f.name, nameSpace, outputTimestampType)
+            toAvroType(f.dataType, f.nullable, f.name, nameSpace)
           fieldsAssembler.name(f.name).`type`(fieldAvroType).noDefault()
         }
         fieldsAssembler.endRecord()

@@ -27,7 +27,7 @@ import com.hortonworks.registries.schemaregistry.client.SchemaRegistryClient.Con
 import com.hortonworks.registries.schemaregistry.serdes.avro.{AvroSnapshotDeserializer, AvroSnapshotSerializer}
 import collection.JavaConverters._
 
-import com.hortonworks.spark.registry.sparkavro.{AvroDeserializer, AvroSerializer, SchemaConverters}
+import com.hortonworks.spark.registry.avro.{AvroDeserializer, AvroSerializer, SchemaConverters}
 import org.apache.avro.Schema
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.api.java.UDF1

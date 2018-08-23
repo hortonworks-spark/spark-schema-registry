@@ -9,7 +9,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 
 /**
  * This example illustrates the usage of Schema registry to de-serialize and serialize
- * messages from and to kafka. See [[SchemaExample]] for the manual approach of
+ * messages from and to kafka. See [[SchemaJsonExample]] for the manual approach of
  * specifying the schema as a Spark StructType and [[SchemaRegistryJsonExample]] for
  * using the schema to decode plain JSON messages.
  *

@@ -9,7 +9,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 
 /**
  * This example illustrates the usage of Schema registry to infer the spark schema
- * based on the kafka topic. See [[SchemaExample]] for the manual approach of
+ * based on the kafka topic. See [[SchemaJsonExample]] for the manual approach of
  * specifying the schema as a Spark StructType.
  *
  * This example depends on the resources available at
