@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hortonworks-spark/shc.svg?branch=master)](https://travis-ci.org/hortonworks-spark/spark-schema-registry)
+[![Build Status](https://travis-ci.org/hortonworks-spark/spark-schema-registry.svg?branch=master)](https://travis-ci.org/hortonworks-spark/spark-schema-registry)
 
 # Apache Spark - Schema Registry integration
 
