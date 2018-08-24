@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "namespace": "com.hortonworks.registries",
+  "name": "trucks",
+  "fields": [
+    {
+      "name": "driverId",
+      "type": "long"
+    },
+    {
+      "name": "driverName",
+      "type": "string"
+    },
+    {
+       "name": "latitude",
+       "type": "double",
+       "default": 0.0
+    },
+    {
+       "name": "longitude",
+       "type": "double",
+       "default": 0.0
+    },
+    {
+      "name": "miles",
+      "type": "long"
+    }
+  ]
+}

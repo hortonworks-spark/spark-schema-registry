@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "namespace": "com.hortonworks.registries",
+  "name": "trucks",
+  "fields": [
+    {
+      "name": "driverId",
+      "type": "long"
+    },
+    {
+      "name": "driverName",
+      "type": "string"
+    },
+    {
+      "name": "miles",
+      "type": "long"
+    }
+  ]
+}
