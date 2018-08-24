@@ -74,6 +74,18 @@ class SchemaRegistryUtil(session: SparkSession, config: Map[String, Object]) {
   }
 
   /**
+   * Returns a schema (String) for the latest version of the schema
+   * from schema registry. E.g. If the schema type stored in
+   * schema registry is Avro, this would return the schema as an Avro string.
+   *
+   * @param schemaName the schema name
+   * @return the schema string
+   */
+  def schemaText(schemaName: String): String = {
+    fetchSchemaVersionInfo(schemaName, Option.empty).getSchemaText
+  }
+
+  /**
    * Returns a schema (String) for the given (schema, version)
    * from schema registry. E.g. If the schema type stored in
    * schema registry is Avro, this would return the schema as an Avro string.
