@@ -19,7 +19,7 @@ package com.hortonworks.spark.registry.examples
 
 import java.util.UUID
 
-import com.hortonworks.spark.registry.util.SchemaRegistryUtil
+import com.hortonworks.spark.registry.util._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{from_json, struct, to_json}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
@@ -73,12 +73,12 @@ object SchemaRegistryJsonExample {
     // the schema registry client config
     val config = Map[String, Object]("schema.registry.url" -> schemaRegistryUrl)
 
-    // get an instance of schema registry util
-    val srUtil = SchemaRegistryUtil(spark, config)
+    // the schema registry config that will be implicitly passed
+    implicit val srConfig:SchemaRegistryConfig = SchemaRegistryConfig(config)
 
     // retrieve the translated "Spark schema" corresponding to the schema associated
     // with the topic in the schema registry.
-    val schema = srUtil.sparkSchema(topic)
+    val schema = sparkSchema(topic)
 
     // read messages from kafka and parse it using the above schema
     val df = messages

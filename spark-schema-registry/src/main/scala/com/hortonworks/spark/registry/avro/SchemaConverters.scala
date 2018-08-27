@@ -30,9 +30,10 @@ import scala.util.Random
  * This object contains method that are used to convert sparkSQL schemas to avro schemas and vice
  * versa.
  * NOTE:
- * This is taken from Apache spark master since spark versions 2.3
- * and below does not have built in Avro support.
+ * This is taken from Apache spark master since spark versions <= 2.3
+ * does not have built in Avro support.
  * https://github.com/apache/spark/tree/master/external/avro/src/main/scala/org/apache/spark/sql/avro
+ * This has some fixes for handling the avro namespaces correctly.
  */
 object SchemaConverters {
   object AvroOutputTimestampType extends Enumeration {
@@ -149,7 +150,7 @@ object SchemaConverters {
       catalystType: DataType,
       nullable: Boolean = false,
       recordName: String = "topLevelRecord",
-      prevNameSpace: String = "")
+      nameSpace: String = "")
     : Schema = {
     val builder = SchemaBuilder.builder()
 
@@ -169,29 +170,27 @@ object SchemaConverters {
         val avroType = LogicalTypes.decimal(d.precision, d.scale)
         val fixedSize = minBytesForPrecision(d.precision)
         // Need to avoid naming conflict for the fixed fields
-        val name = prevNameSpace match {
+        val name = nameSpace match {
           case "" => s"$recordName.fixed"
-          case _ => s"$prevNameSpace.$recordName.fixed"
+          case _ => s"$nameSpace.$recordName.fixed"
         }
         avroType.addToSchema(SchemaBuilder.fixed(name).size(fixedSize))
 
       case BinaryType => builder.bytesType()
       case ArrayType(et, containsNull) =>
         builder.array()
-          .items(toAvroType(et, containsNull, recordName, prevNameSpace))
+          .items(toAvroType(et, containsNull, recordName, nameSpace))
       case MapType(StringType, vt, valueContainsNull) =>
         builder.map()
-          .values(toAvroType(vt, valueContainsNull, recordName, prevNameSpace))
+          .values(toAvroType(vt, valueContainsNull, recordName, nameSpace))
       case st: StructType =>
-        val nameSpace = prevNameSpace match {
-          case "" => recordName
-          case _ => s"$prevNameSpace.$recordName"
-        }
+        val curNameSpace = if (nameSpace != "") nameSpace else recordName
+        val childNameSpace = s"$curNameSpace.$recordName"
 
-        val fieldsAssembler = builder.record(recordName).namespace(nameSpace).fields()
+        val fieldsAssembler = builder.record(recordName).namespace(curNameSpace).fields()
         st.foreach { f =>
           val fieldAvroType =
-            toAvroType(f.dataType, f.nullable, f.name, nameSpace)
+            toAvroType(f.dataType, f.nullable, f.name, childNameSpace)
           fieldsAssembler.name(f.name).`type`(fieldAvroType).noDefault()
         }
         fieldsAssembler.endRecord()

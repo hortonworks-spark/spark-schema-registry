@@ -9,17 +9,7 @@
     },
     {
       "name": "driverName",
-      "type": "string"
-    },
-    {
-       "name": "latitude",
-       "type": "double",
-       "default": 0.0
-    },
-    {
-       "name": "longitude",
-       "type": "double",
-       "default": 0.0
+      "type": ["string", "null"]
     },
     {
       "name": "miles",
