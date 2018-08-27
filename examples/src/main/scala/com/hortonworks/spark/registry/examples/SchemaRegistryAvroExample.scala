@@ -19,7 +19,7 @@ package com.hortonworks.spark.registry.examples
 
 import java.util.UUID
 
-import com.hortonworks.spark.registry.util.SchemaRegistryUtil
+import com.hortonworks.spark.registry.util._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.struct
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
@@ -73,21 +73,14 @@ object SchemaRegistryAvroExample {
     // the schema registry client config
     val config = Map[String, Object]("schema.registry.url" -> schemaRegistryUrl)
 
-    // get an instance of Schema registry util to manage schemas
-    val srUtil = SchemaRegistryUtil(spark, config)
+    // the schema registry config that will be implicitly passed
+    implicit val srConfig: SchemaRegistryConfig = SchemaRegistryConfig(config)
 
-    // register a spark UDF to deserialize messages (avro) ingested into
-    // the kafka topic using a schema registry de-serializer. This method automatically
-    // infers the schema registry schema associated with the topic and maps it to spark schema.
-    val from_schema_registry = srUtil.getDeserializer(topic)
-
-    // register a spark UDF to serialize spark rows into
-    // the kafka topic using a schema registry serializer.
-    val to_schema_registry = srUtil.getSerializer(outTopic)
-
-    // read messages from kafka and deserialize
+    // Read messages from kafka and deserialize.
+    // This uses the schema registry schema
+    // associated with the topic and maps it to spark schema.
     val df = messages
-      .select(from_schema_registry($"value").alias("message"))
+      .select(from_sr($"value", topic).alias("message"))
 
     // project (driverId, truckId, miles) for the events where miles > 300
     val filtered = df.select($"message.driverId", $"message.truckId", $"message.miles")
@@ -96,7 +89,7 @@ object SchemaRegistryAvroExample {
     // write the output as schema registry serialized avro records to a kafka topic
     // should produce events like {"driverId":14,"truckId":25,"miles":373}
     val query = filtered
-      .select(to_schema_registry(struct($"*")).alias("value"))
+      .select(to_sr(struct($"*"), outTopic).alias("value"))
       .writeStream
       .format("kafka")
       .option("kafka.bootstrap.servers", bootstrapServers)

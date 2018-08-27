@@ -17,7 +17,7 @@
 
 package com.hortonworks.spark.registry.avro
 
-import java.math.{BigDecimal}
+import java.math.BigDecimal
 import java.nio.ByteBuffer
 
 import scala.collection.JavaConverters._

@@ -19,7 +19,7 @@ package com.hortonworks.spark.registry.examples
 
 import java.util.UUID
 
-import com.hortonworks.spark.registry.util.SchemaRegistryUtil
+import com.hortonworks.spark.registry.util._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 
@@ -58,17 +58,13 @@ object SchemaRegistryAvroReader {
     // the schema registry client config
     val config = Map[String, Object]("schema.registry.url" -> schemaRegistryUrl)
 
-    // get an instance of Schema registry util to manage schemas
-    val srUtil = SchemaRegistryUtil(spark, config)
+    // the schema registry config that will be implicitly passed
+    implicit val srConfig: SchemaRegistryConfig = SchemaRegistryConfig(config)
 
-    // register a spark UDF to deserialize the messages (avro) ingested into
-    // the kafka topic. This method automatically infers the schema registry
-    // schema associated with the topic and maps it to the equivalent spark schema.
-    val from_schema_registry = srUtil.getDeserializer(topic)
-
-    // read messages from kafka and deserialize it using the above UDF
+    // Read messages from kafka and deserialize.
+    // This uses the schema registry schema associated with the topic.
     val df = messages
-      .select(from_schema_registry($"value").alias("message"))
+      .select(from_sr($"value", topic).alias("message"))
 
     // write the output to console
     // should produce events like {"driverId":14,"truckId":25,"miles":373}

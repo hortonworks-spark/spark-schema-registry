@@ -9,11 +9,21 @@
     },
     {
       "name": "driverName",
-      "type": "string"
+      "type": ["string", "null"]
     },
     {
       "name": "miles",
       "type": "long"
+    },
+    {
+       "name": "latitude",
+       "type": "double",
+       "default": 0.0
+    },
+    {
+       "name": "longitude",
+       "type": "double",
+       "default": 0.0
     }
   ]
 }
