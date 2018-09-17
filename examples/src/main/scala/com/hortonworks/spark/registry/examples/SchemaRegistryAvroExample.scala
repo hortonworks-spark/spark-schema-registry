@@ -39,7 +39,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
  *    https://github.com/hortonworks/registry/blob/master/examples/schema-registry/avro/src/main/resources/truck_events.avsc
  *    and create a subset of fields (driverId, truckId, miles) as the output schema ('topic1-out')
  * 2. Run the Spark application
- *    SchemaRegistryAvroExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location>
+ *    SchemaRegistryAvroExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location> [security.protocol]
  * 3. Ingest sample data using the schema registry example app into input topic
  *    E.g. java -jar avro-examples-*.jar -d data/truck_events_json -p data/kafka-producer.props -sm -s data/truck_events.avsc
  *    (more details - https://github.com/hortonworks/registry/tree/master/examples/schema-registry/avro)
@@ -55,18 +55,23 @@ object SchemaRegistryAvroExample {
     val outTopic = if (args.length > 3) args(3) else "topic1-out"
     val checkpointLocation =
       if (args.length > 4) args(4) else "/tmp/temporary-" + UUID.randomUUID.toString
+    val securityProtocol =
+      if (args.length > 5) Option(args(5)) else None
 
     val spark = SparkSession
       .builder
       .appName("SchemaRegistryAvroExample")
       .getOrCreate()
 
-    val messages = spark
+    val reader = spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topic)
-      .load()
+
+    val messages = securityProtocol
+      .map(p => reader.option("kafka.security.protocol", p).load())
+      .getOrElse(reader.load())
 
     import spark.implicits._
 
@@ -88,7 +93,7 @@ object SchemaRegistryAvroExample {
 
     // write the output as schema registry serialized avro records to a kafka topic
     // should produce events like {"driverId":14,"truckId":25,"miles":373}
-    val query = filtered
+    val writer = filtered
       .select(to_sr(struct($"*"), outTopic).alias("value"))
       .writeStream
       .format("kafka")
@@ -97,7 +102,10 @@ object SchemaRegistryAvroExample {
       .option("checkpointLocation", checkpointLocation)
       .trigger(Trigger.ProcessingTime(10000))
       .outputMode(OutputMode.Append())
-      .start()
+    
+    val query = securityProtocol
+      .map(p => writer.option("kafka.security.protocol", p).start())
+      .getOrElse(writer.start())
 
     query.awaitTermination()
   }

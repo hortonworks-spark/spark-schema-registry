@@ -37,7 +37,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
  *    name (E.g. topic1) as the schema name.
  *    https://github.com/hortonworks/registry/blob/master/examples/schema-registry/avro/src/main/resources/truck_events.avsc
  * 2. Run the Spark application
- *    SchemaRegistryJsonExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location>
+ *    SchemaRegistryJsonExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location> [security.protocol]
  * 3. Ingest the sample data (json) into input topic
  *    E.g. cat examples/schema-registry/avro/data/truck_events_json | kafka-console-producer.sh
  *    --broker-list host:port --topic topic1
@@ -55,18 +55,24 @@ object SchemaRegistryJsonExample {
     val outTopic = if (args.length > 3) args(3) else "topic1-out"
     val checkpointLocation =
       if (args.length > 4) args(4) else "/tmp/temporary-" + UUID.randomUUID.toString
+    val securityProtocol =
+      if (args.length > 5) Option(args(5)) else None
 
     val spark = SparkSession
       .builder
       .appName("SchemaRegistryJsonExample")
       .getOrCreate()
 
-    val messages = spark
+    val reader = spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topic)
-      .load()
+
+    val messages = securityProtocol
+      .map(p => reader.option("kafka.security.protocol", p).load())
+      .getOrElse(reader.load())
+
 
     import spark.implicits._
 
@@ -90,7 +96,7 @@ object SchemaRegistryJsonExample {
 
     // write the output to a kafka topic
     // should produce events like {"driverId":14,"truckId":25,"miles":373}
-    val query = filtered
+    val writer = filtered
       .select(to_json(struct($"*")).alias("value"))
       .writeStream
       .format("kafka")
@@ -99,7 +105,10 @@ object SchemaRegistryJsonExample {
       .option("checkpointLocation", checkpointLocation)
       .trigger(Trigger.ProcessingTime(10000))
       .outputMode(OutputMode.Append())
-      .start()
+
+    val query = securityProtocol
+      .map(p => writer.option("kafka.security.protocol", p).start())
+      .getOrElse(writer.start())
 
     query.awaitTermination()
   }

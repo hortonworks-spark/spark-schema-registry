@@ -78,7 +78,7 @@ implicit val srConfig:SchemaRegistryConfig = SchemaRegistryConfig(config)
 ```
 #### Fetching spark schema by name
 
-The API supports fetching the schema registry schema as a Spark Schema.
+The API supports fetching the Schema Registry schema as a Spark schema.
 
 
 - `sparkSchema(schemaName: String)`
@@ -187,7 +187,55 @@ instead, like:
     your-application-jar \
     args ...
 
-### Security
+### Running in a Kerberos enabled cluster
 
-Spark and Schema registry can be configured to run securely using Kerberos when they share the same KDC.
+The library works in a Kerberos set up where Spark and Schema registry has been deployed on a Kerberos
+enabled cluster.
 
+The main thing is to setup the appropriate `JAAS` config for the `RegistryClient` (and `KafkaClient` if the spark 
+data source or sink is Kafka). As an example, to run the `SchemaRegistryAvroExample` in a Kerberos set up,
+
+1. Create a keytab (say app.keytab) with the login user and principal you want to run the Application.
+2. Create an app_jaas.conf and specify the keytab and principal created in step 1.
+
+   (if deploying to YARN, the keytab and conf files will be distributed as YARN local resources. They will end up 
+   in the current directory of the Spark YARN container and the location should be specified as ./app.keytab)
+
+    ```
+    RegistryClient {
+        com.sun.security.auth.module.Krb5LoginModule required
+        useKeyTab=true
+        keyTab="./app.keytab"
+        storeKey=true
+        useTicketCache=false
+        principal="<principal>";
+    };
+    
+    KafkaClient {
+       com.sun.security.auth.module.Krb5LoginModule required
+       useKeyTab=true
+       keyTab="./app.keytab"
+       storeKey=true
+       useTicketCache=false
+       serviceName="kafka"
+       principal="<principal>";
+    };
+    
+    ```
+    
+4. Provide the required ACLs for the kafka topics (in-topic, out-topic) for the principal.
+     
+5. In `spark-submit` pass the jaas configuration file via `extraJavaOptions` (and also as local resource files in YARN cluster mode)
+
+   ```
+    spark-submit --master yarn --deploy-mode cluster \
+       --keytab app.keytab --principal <principal> \
+       --files app_jaas.conf#app_jaas.conf,app.keytab#app.keytab \
+       --jars spark-schema-registry-0.1-SNAPSHOT-jar-with-dependencies.jar \
+       --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.3.1 \
+       --conf "spark.executor.extraJavaOptions=-Djava.security.auth.login.config=./app_jaas.conf" \
+       --conf "spark.driver.extraJavaOptions=-Djava.security.auth.login.config=./app_jaas.conf" \
+       --class com.hortonworks.spark.registry.examples.SchemaRegistryAvroExample 
+       spark-schema-registry-examples-0.1-SNAPSHOT.jar \
+       <schema-registry-url> <bootstrap-server> <in-topic> <out-topic> <checkpoint-dir> SASL_PLAINTEXT
+   ```

@@ -29,7 +29,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
  * registry.
  *
  * Usage:
- * SchemaRegistryAvroReader <schema-registry-url> <bootstrap-servers> <input-topic> <checkpoint-location>
+ * SchemaRegistryAvroReader <schema-registry-url> <bootstrap-servers> <input-topic> <checkpoint-location> [security.protocol]
  */
 object SchemaRegistryAvroReader {
 
@@ -40,18 +40,23 @@ object SchemaRegistryAvroReader {
     val topic = if (args.length > 2) args(2) else "topic1-out"
     val checkpointLocation =
       if (args.length > 3) args(3) else "/tmp/temporary-" + UUID.randomUUID.toString
+    val securityProtocol =
+      if (args.length > 4) Option(args(4)) else None
 
     val spark = SparkSession
       .builder
       .appName("SchemaRegistryAvroReader")
       .getOrCreate()
 
-    val messages = spark
+    val reader = spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topic)
-      .load()
+
+    val messages = securityProtocol
+      .map(p => reader.option("kafka.security.protocol", p).load())
+      .getOrElse(reader.load())
 
     import spark.implicits._
 
