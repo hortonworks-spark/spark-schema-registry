@@ -34,12 +34,11 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
  * https://github.com/hortonworks/registry/tree/master/examples/schema-registry
  *
  * To run the example:
- * 1. Start a schema registry instance and register the input and output schemas.
+ * 1. Start a schema registry instance and register the input schema.
  *    E.g. 'topic1' as input schema from below:
  *    https://github.com/hortonworks/registry/blob/master/examples/schema-registry/avro/src/main/resources/truck_events.avsc
- *    and create a subset of fields (driverId, truckId, miles) as the output schema ('topic1-out')
  * 2. Run the Spark application
- *    SchemaRegistryAvroExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location> [security.protocol]
+ *    SchemaRegistryAvroExample <schema-registry-url> <bootstrap-servers> <input-topic> <output-topic> <checkpoint-location> [kafka.security.protocol]
  * 3. Ingest sample data using the schema registry example app into input topic
  *    E.g. java -jar avro-examples-*.jar -d data/truck_events_json -p data/kafka-producer.props -sm -s data/truck_events.avsc
  *    (more details - https://github.com/hortonworks/registry/tree/master/examples/schema-registry/avro)
