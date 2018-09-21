@@ -33,6 +33,7 @@
   <modules>
     <module>spark-schema-registry</module>
     <module>examples</module>
+    <module>assembly</module>
   </modules>
 
   <properties>
