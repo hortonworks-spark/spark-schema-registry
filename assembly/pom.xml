@@ -8,7 +8,7 @@
 
     <artifactId>hortonworks-spark-schema-registry-bin</artifactId>
     <packaging>pom</packaging>
-    <name>Spark - Schema Registry Integration</name>
+    <name>Spark - Schema Registry Assembly</name>
     <url>https://github.com/hortonworks-spark/spark-schema-registry</url>
 
     <dependencies>
