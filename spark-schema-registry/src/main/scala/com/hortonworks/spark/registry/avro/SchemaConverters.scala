@@ -184,10 +184,8 @@ object SchemaConverters {
         builder.map()
           .values(toAvroType(vt, valueContainsNull, recordName, nameSpace))
       case st: StructType =>
-        val curNameSpace = if (nameSpace != "") nameSpace else recordName
-        val childNameSpace = s"$curNameSpace.$recordName"
-
-        val fieldsAssembler = builder.record(recordName).namespace(curNameSpace).fields()
+        val childNameSpace = if (nameSpace != "") s"$nameSpace.$recordName" else recordName
+        val fieldsAssembler = builder.record(recordName).namespace(nameSpace).fields()
         st.foreach { f =>
           val fieldAvroType =
             toAvroType(f.dataType, f.nullable, f.name, childNameSpace)

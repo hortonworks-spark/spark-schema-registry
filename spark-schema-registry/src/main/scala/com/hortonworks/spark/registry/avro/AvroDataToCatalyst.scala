@@ -22,6 +22,7 @@ import com.hortonworks.registries.schemaregistry.{SchemaVersionInfo, SchemaVersi
 import com.hortonworks.registries.schemaregistry.client.SchemaRegistryClient
 import com.hortonworks.registries.schemaregistry.serdes.avro.AvroSnapshotDeserializer
 import org.apache.avro.Schema
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, UnaryExpression}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types.{BinaryType, DataType}
@@ -56,7 +57,12 @@ case class AvroDataToCatalyst(child: Expression, schemaName: String, version: Op
 
   override def nullSafeEval(input: Any): Any = {
     val binary = input.asInstanceOf[Array[Byte]]
-    avroDeser.deserialize(srDeser.deserialize(new ByteArrayInputStream(binary), srSchema.getVersion))
+    val row = avroDeser.deserialize(srDeser.deserialize(new ByteArrayInputStream(binary), srSchema.getVersion))
+    val result = row match {
+      case r: InternalRow => r.copy()
+      case _ => row
+    }
+    result
   }
 
   override def simpleString: String = {
