@@ -24,7 +24,7 @@ import com.hortonworks.registries.schemaregistry.serdes.avro.AvroSnapshotDeseria
 import org.apache.avro.Schema
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, UnaryExpression}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.types.{BinaryType, DataType}
 
 import scala.collection.JavaConverters._
@@ -65,18 +65,12 @@ case class AvroDataToCatalyst(child: Expression, schemaName: String, version: Op
     result
   }
 
-  override def simpleString: String = {
-    s"from_sr(${child.sql}, ${dataType.simpleString})"
-  }
-
-  override def sql: String = {
-    s"from_sr(${child.sql}, ${dataType.catalogString})"
-  }
+  override def prettyName: String = "from_sr"
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val expr = ctx.addReferenceObj("this", this)
     defineCodeGen(ctx, ev, input =>
-      s"(${ctx.boxedType(dataType)})$expr.nullSafeEval($input)")
+      s"(${CodeGenerator.boxedType(dataType)})$expr.nullSafeEval($input)")
   }
 
   private def fetchSchemaVersionInfo(schemaName: String, version: Option[Int]): SchemaVersionInfo = {
